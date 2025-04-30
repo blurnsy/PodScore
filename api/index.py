@@ -1,0 +1,283 @@
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from datetime import datetime
+from typing import Dict, Any, Optional
+import sqlite3
+import os
+from pathlib import Path
+
+app = Flask(__name__)
+CORS(app)
+
+# Get the absolute path to the database
+db_path = str(Path(__file__).parent.parent.parent.parent / "PersonalPod" / "podcast_reviews.db")
+
+class Database:
+    def __init__(self, db_path: str):
+        self.conn = sqlite3.connect(db_path)
+        self.conn.row_factory = sqlite3.Row
+
+    def get_shows(self) -> list[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM shows ORDER BY name')
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_show(self, show_id: str) -> Optional[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        cursor.execute('SELECT * FROM shows WHERE id = ?', (show_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+    def get_episodes(self, show_id: Optional[str] = None, limit: int = 100, offset: int = 0) -> list[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        if show_id:
+            cursor.execute('''
+            SELECT e.*, s.name as show_name 
+            FROM episodes e
+            JOIN shows s ON e.show_id = s.id
+            WHERE e.show_id = ?
+            ORDER BY e.release_date DESC
+            LIMIT ? OFFSET ?
+            ''', (show_id, limit, offset))
+        else:
+            cursor.execute('''
+            SELECT e.*, s.name as show_name 
+            FROM episodes e
+            JOIN shows s ON e.show_id = s.id
+            ORDER BY e.release_date DESC
+            LIMIT ? OFFSET ?
+            ''', (limit, offset))
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_episode(self, episode_id: str) -> Optional[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        cursor.execute('''
+        SELECT e.*, s.name as show_name 
+        FROM episodes e
+        JOIN shows s ON e.show_id = s.id
+        WHERE e.id = ?
+        ''', (episode_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+    def add_review(self, episode_id: str, rating: int, review: str) -> None:
+        if rating < 1 or rating > 5:
+            raise ValueError("Rating must be between 1 and 5")
+        
+        cursor = self.conn.cursor()
+        cursor.execute('''
+        INSERT INTO reviews (episode_id, rating, review, timestamp)
+        VALUES (?, ?, ?, ?)
+        ''', (episode_id, rating, review, datetime.now().isoformat()))
+        self.conn.commit()
+
+    def get_reviews(self, show_id: Optional[str] = None) -> list[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        if show_id:
+            cursor.execute('''
+            SELECT r.*, e.name, e.release_date, s.name as show_name
+            FROM reviews r
+            JOIN episodes e ON r.episode_id = e.id
+            JOIN shows s ON e.show_id = s.id
+            WHERE e.show_id = ?
+            ORDER BY r.timestamp DESC
+            ''', (show_id,))
+        else:
+            cursor.execute('''
+            SELECT r.*, e.name, e.release_date, s.name as show_name
+            FROM reviews r
+            JOIN episodes e ON r.episode_id = e.id
+            JOIN shows s ON e.show_id = s.id
+            ORDER BY r.timestamp DESC
+            ''')
+        return [dict(row) for row in cursor.fetchall()]
+
+    def search_reviews(self, query: str, show_id: Optional[str] = None) -> list[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        if show_id:
+            cursor.execute('''
+            SELECT r.*, e.name, e.release_date, s.name as show_name
+            FROM reviews r
+            JOIN episodes e ON r.episode_id = e.id
+            JOIN shows s ON e.show_id = s.id
+            WHERE (r.review LIKE ? OR e.name LIKE ?) AND e.show_id = ?
+            ORDER BY r.timestamp DESC
+            ''', (f'%{query}%', f'%{query}%', show_id))
+        else:
+            cursor.execute('''
+            SELECT r.*, e.name, e.release_date, s.name as show_name
+            FROM reviews r
+            JOIN episodes e ON r.episode_id = e.id
+            JOIN shows s ON e.show_id = s.id
+            WHERE r.review LIKE ? OR e.name LIKE ? OR s.name LIKE ?
+            ORDER BY r.timestamp DESC
+            ''', (f'%{query}%', f'%{query}%', f'%{query}%'))
+        return [dict(row) for row in cursor.fetchall()]
+
+    def mark_as_listened(self, episode_id: str, listened_date: Optional[str] = None) -> None:
+        cursor = self.conn.cursor()
+        if listened_date is None:
+            listened_date = datetime.now().date().isoformat()
+        
+        cursor.execute('''
+        INSERT OR REPLACE INTO listening_history (episode_id, listened_date, timestamp)
+        VALUES (?, ?, ?)
+        ''', (episode_id, listened_date, datetime.now().isoformat()))
+        self.conn.commit()
+
+    def get_listening_history(self, show_id: Optional[str] = None, limit: int = 100) -> list[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        if show_id:
+            cursor.execute('''
+            SELECT h.*, e.name as episode_name, s.name as show_name
+            FROM listening_history h
+            JOIN episodes e ON h.episode_id = e.id
+            JOIN shows s ON e.show_id = s.id
+            WHERE e.show_id = ?
+            ORDER BY h.listened_date DESC
+            LIMIT ?
+            ''', (show_id, limit))
+        else:
+            cursor.execute('''
+            SELECT h.*, e.name as episode_name, s.name as show_name
+            FROM listening_history h
+            JOIN episodes e ON h.episode_id = e.id
+            JOIN shows s ON e.show_id = s.id
+            ORDER BY h.listened_date DESC
+            LIMIT ?
+            ''', (limit,))
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_listening_stats(self) -> Dict[str, Any]:
+        cursor = self.conn.cursor()
+        
+        # Get total episodes listened
+        cursor.execute('SELECT COUNT(DISTINCT episode_id) FROM listening_history')
+        total_episodes = cursor.fetchone()[0]
+        
+        # Get total shows with listened episodes
+        cursor.execute('''
+        SELECT COUNT(DISTINCT s.id)
+        FROM shows s
+        JOIN episodes e ON s.id = e.show_id
+        JOIN listening_history h ON e.id = h.episode_id
+        ''')
+        total_shows = cursor.fetchone()[0]
+        
+        # Get episodes listened by month
+        cursor.execute('''
+        SELECT strftime('%Y-%m', listened_date) as month, COUNT(*) as count
+        FROM listening_history
+        GROUP BY month
+        ORDER BY month DESC
+        LIMIT 12
+        ''')
+        monthly_stats = [dict(row) for row in cursor.fetchall()]
+        
+        return {
+            'total_episodes': total_episodes,
+            'total_shows': total_shows,
+            'monthly_stats': monthly_stats
+        }
+
+    def close(self) -> None:
+        self.conn.close()
+
+@app.route('/api/shows', methods=['GET'])
+def get_shows():
+    db = Database(db_path)
+    try:
+        shows = db.get_shows()
+        return jsonify(shows)
+    finally:
+        db.close()
+
+@app.route('/api/shows/<show_id>', methods=['GET'])
+def get_show(show_id):
+    db = Database(db_path)
+    try:
+        show = db.get_show(show_id)
+        if show:
+            return jsonify(show)
+        return jsonify({'error': 'Show not found'}), 404
+    finally:
+        db.close()
+
+@app.route('/api/episodes', methods=['GET'])
+def get_episodes():
+    show_id = request.args.get('show_id')
+    limit = int(request.args.get('limit', 100))
+    offset = int(request.args.get('offset', 0))
+    
+    db = Database(db_path)
+    try:
+        episodes = db.get_episodes(show_id, limit, offset)
+        return jsonify(episodes)
+    finally:
+        db.close()
+
+@app.route('/api/episodes/<episode_id>', methods=['GET'])
+def get_episode(episode_id):
+    db = Database(db_path)
+    try:
+        episode = db.get_episode(episode_id)
+        if episode:
+            return jsonify(episode)
+        return jsonify({'error': 'Episode not found'}), 404
+    finally:
+        db.close()
+
+@app.route('/api/reviews', methods=['GET', 'POST'])
+def handle_reviews():
+    db = Database(db_path)
+    try:
+        if request.method == 'GET':
+            show_id = request.args.get('show_id')
+            reviews = db.get_reviews(show_id)
+            return jsonify(reviews)
+        else:  # POST
+            data = request.json
+            db.add_review(data['episode_id'], data['rating'], data['review'])
+            return jsonify({'status': 'success'})
+    finally:
+        db.close()
+
+@app.route('/api/reviews/search', methods=['GET'])
+def search_reviews():
+    query = request.args.get('q')
+    show_id = request.args.get('show_id')
+    
+    db = Database(db_path)
+    try:
+        reviews = db.search_reviews(query, show_id)
+        return jsonify(reviews)
+    finally:
+        db.close()
+
+@app.route('/api/listening-history', methods=['GET', 'POST'])
+def handle_listening_history():
+    db = Database(db_path)
+    try:
+        if request.method == 'GET':
+            show_id = request.args.get('show_id')
+            limit = int(request.args.get('limit', 100))
+            history = db.get_listening_history(show_id, limit)
+            return jsonify(history)
+        else:  # POST
+            data = request.json
+            db.mark_as_listened(data['episode_id'], data.get('listened_date'))
+            return jsonify({'status': 'success'})
+    finally:
+        db.close()
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    db = Database(db_path)
+    try:
+        stats = db.get_listening_stats()
+        return jsonify(stats)
+    finally:
+        db.close()
+
+if __name__ == '__main__':
+    app.run(debug=True) 
