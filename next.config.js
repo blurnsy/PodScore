@@ -17,6 +17,15 @@ const nextConfig = {
         ? "http://localhost:5328"
         : process.env.NEXT_PUBLIC_API_URL,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+        pathname: '/image/**',
+      },
+    ],
+  },
 }
 
 module.exports = nextConfig

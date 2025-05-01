@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import Link from "next/link"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -23,7 +24,29 @@ export default function RootLayout({
               <div className="flex justify-between h-16">
                 <div className="flex">
                   <div className="flex-shrink-0 flex items-center">
-                    <h1 className="text-xl font-bold text-gray-900">PersonalPod</h1>
+                    <Link href="/" className="text-xl font-bold text-gray-900">
+                      PersonalPod
+                    </Link>
+                  </div>
+                  <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                    <Link
+                      href="/"
+                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
+                    >
+                      Home
+                    </Link>
+                    <Link
+                      href="/shows"
+                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
+                    >
+                      Shows
+                    </Link>
+                    <Link
+                      href="/reviews"
+                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
+                    >
+                      Reviews
+                    </Link>
                   </div>
                 </div>
               </div>
