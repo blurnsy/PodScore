@@ -67,7 +67,14 @@ class Database:
             ORDER BY e.release_date DESC
             LIMIT ? OFFSET ?
             ''', (limit, offset))
-        return [dict(row) for row in cursor.fetchall()]
+        episodes = [dict(row) for row in cursor.fetchall()]
+        for episode in episodes:
+            if episode['image_url']:
+                episode['images'] = [{'url': episode['image_url'], 'height': 640, 'width': 640}]
+            else:
+                episode['images'] = []
+            del episode['image_url']
+        return episodes
 
     def get_episode(self, episode_id: str) -> Optional[Dict[str, Any]]:
         cursor = self.conn.cursor()
