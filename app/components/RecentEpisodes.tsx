@@ -24,66 +24,18 @@ interface EpisodeItemProps {
 }
 
 interface RecentEpisodesProps {
-  initialEpisodes: Episode[]
+  episodes: Episode[]
+  onRefresh: () => void
+  isRefreshing: boolean
+  setEpisodes: (episodes: Episode[]) => void
 }
 
-export default function RecentEpisodes({ initialEpisodes }: RecentEpisodesProps) {
-  const [episodes, setEpisodes] = useState(initialEpisodes)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-
+export default function RecentEpisodes({ episodes, onRefresh, isRefreshing, setEpisodes }: RecentEpisodesProps) {
   const handleEpisodeUpdate = (updatedEpisode: Episode) => {
-    // Remove episode if both listened and rated
     if (updatedEpisode.listened && updatedEpisode.rating) {
       setEpisodes(episodes.filter(ep => ep.id !== updatedEpisode.id))
     } else {
-      // Otherwise update its state
-      setEpisodes(episodes.map(ep => 
-        ep.id === updatedEpisode.id ? updatedEpisode : ep
-      ))
-    }
-  }
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    try {
-      const res = await fetch(`${API_BASE}/api/episodes?limit=50`, { cache: 'no-store' })
-      if (!res.ok) throw new Error("Failed to fetch episodes")
-      const newEpisodes = await res.json()
-      
-      // Fetch listening history
-      const historyRes = await fetch(`${API_BASE}/api/listening-history`, { cache: 'no-store' })
-      if (!historyRes.ok) throw new Error("Failed to fetch listening history")
-      const history = await historyRes.json()
-      const listenedEpisodes = new Set(history.map((h: any) => h.episode_id))
-      
-      // Fetch ratings
-      const ratingsRes = await fetch(`${API_BASE}/api/reviews`, { cache: 'no-store' })
-      if (!ratingsRes.ok) throw new Error("Failed to fetch ratings")
-      const ratings = await ratingsRes.json()
-      const episodeRatings = new Map(ratings.map((r: any) => [r.episode_id, r.rating]))
-      
-      // Filter and enrich episodes
-      const twoDaysAgo = new Date()
-      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
-      
-      const filteredEpisodes = newEpisodes
-        .filter((episode: Episode) => {
-          const releaseDate = new Date(episode.release_date)
-          const isRecent = releaseDate >= twoDaysAgo
-          const isListened = listenedEpisodes.has(episode.id)
-          const rating = episodeRatings.get(episode.id)
-          
-          return isRecent && (!isListened || !rating)
-        })
-        .map((episode: Episode) => ({
-          ...episode,
-          listened: listenedEpisodes.has(episode.id),
-          rating: episodeRatings.get(episode.id),
-        }))
-
-      setEpisodes(filteredEpisodes)
-    } finally {
-      setIsRefreshing(false)
+      setEpisodes(episodes.map(ep => ep.id === updatedEpisode.id ? updatedEpisode : ep))
     }
   }
 
@@ -93,10 +45,10 @@ export default function RecentEpisodes({ initialEpisodes }: RecentEpisodesProps)
         <div className="px-4 py-5 sm:p-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Recent Episodes
+              New Episodes
             </h3>
             <button
-              onClick={handleRefresh}
+              onClick={() => { console.log('Refresh button clicked'); onRefresh(); }}
               disabled={isRefreshing}
               className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
@@ -137,10 +89,10 @@ export default function RecentEpisodes({ initialEpisodes }: RecentEpisodesProps)
       <div className="px-4 py-5 sm:p-6">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium leading-6 text-gray-900">
-            Recent Episodes
+            New Episodes
           </h3>
           <button
-            onClick={handleRefresh}
+            onClick={() => { console.log('Refresh button clicked'); onRefresh(); }}
             disabled={isRefreshing}
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
@@ -196,15 +148,12 @@ function EpisodeItem({ episode, onUpdate }: EpisodeItemProps) {
         },
         body: JSON.stringify({ episode_id: episode.id }),
       })
-
       if (res.ok) {
         setIsListened(true)
         const updatedEpisode = { ...episode, listened: true }
         onUpdate(updatedEpisode)
       }
-    } catch (error) {
-      console.error('Error marking episode as listened:', error)
-    }
+    } catch (error) {}
   }
 
   const handleSubmitReview = async (rating: number, review?: string) => {
@@ -220,16 +169,13 @@ function EpisodeItem({ episode, onUpdate }: EpisodeItemProps) {
           review: review?.trim(),
         }),
       })
-
       if (res.ok) {
         setRating(rating)
         setIsReviewModalOpen(false)
         const updatedEpisode = { ...episode, rating }
         onUpdate(updatedEpisode)
       }
-    } catch (error) {
-      console.error('Error submitting review:', error)
-    }
+    } catch (error) {}
   }
 
   return (

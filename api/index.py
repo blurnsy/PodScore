@@ -310,7 +310,14 @@ def handle_reviews():
             return jsonify(reviews)
         else:  # POST
             data = request.json
-            db.add_review(data['episode_id'], data['rating'], data['review'])
+            if not data or 'episode_id' not in data or 'rating' not in data:
+                return jsonify({'error': 'episode_id and rating are required'}), 400
+            
+            db.add_review(
+                episode_id=data['episode_id'],
+                rating=data['rating'],
+                review=data.get('review', '')
+            )
             return jsonify({'status': 'success'})
     finally:
         db.close()
