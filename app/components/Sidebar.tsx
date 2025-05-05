@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { HomeIcon, TvIcon, ListBulletIcon, ChartBarIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
+import { HomeIcon, TvIcon, ListBulletIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
 const navItems = [
   { name: 'Home', href: '/', icon: HomeIcon },
@@ -33,12 +33,14 @@ export default function Sidebar() {
           )
         })}
       </nav>
-      <div className="mb-2">
-        <button className="flex items-center justify-center gap-2 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-full text-lg transition-colors shadow">
-          <PencilSquareIcon className="h-6 w-6" />
-          Log
-        </button>
-      </div>
+      <Link href="/profile" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors mt-4">
+        <img src="/profile.jpg" alt="User avatar" className="w-12 h-12 rounded-full object-cover border-2 border-gray-200" />
+        <div className="flex flex-col">
+          <span className="font-semibold text-gray-900 leading-tight">burnsy</span>
+          <span className="text-gray-500 text-sm">@0xburnsy</span>
+        </div>
+        <span className="ml-auto text-gray-400 text-2xl">&#8230;</span>
+      </Link>
     </aside>
   )
 } 
