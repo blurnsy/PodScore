@@ -33,4 +33,12 @@ CREATE TABLE IF NOT EXISTS listening_history (
     listened_date TEXT NOT NULL,
     timestamp TEXT NOT NULL,
     FOREIGN KEY (episode_id) REFERENCES episodes(id)
+);
+
+CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    review_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    FOREIGN KEY (review_id) REFERENCES reviews(id)
 ); 

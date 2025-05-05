@@ -22,9 +22,10 @@ interface Episode {
 
 interface PostBoxProps {
   userProfilePic: string
+  onReviewSubmit?: (review: any) => void
 }
 
-export default function PostBox({ userProfilePic }: PostBoxProps) {
+export default function PostBox({ userProfilePic, onReviewSubmit }: PostBoxProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [userShows, setUserShows] = useState<Show[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -67,11 +68,28 @@ export default function PostBox({ userProfilePic }: PostBoxProps) {
 
     try {
       setError(null)
-      await submitReview({ 
+      const result = await submitReview({ 
         episode_id: selectedEpisode.id, 
         rating, 
         review 
       })
+      if (onReviewSubmit) {
+        const newReview = {
+          id: result?.id || Date.now(),
+          episode_id: selectedEpisode.id,
+          rating,
+          review: review || '',
+          timestamp: new Date().toISOString(),
+          name: selectedEpisode.name,
+          show_name: selectedShow?.name || '',
+          release_date: selectedEpisode.release_date,
+          image_url: selectedEpisode.images?.[0]?.url,
+          likes: 0,
+          comments: 0,
+          isLiked: false
+        }
+        onReviewSubmit(newReview)
+      }
       setIsModalOpen(false)
       setStep('show')
       setSelectedShow(null)
@@ -165,6 +183,7 @@ export default function PostBox({ userProfilePic }: PostBoxProps) {
         onSubmit={handleSubmit}
         showName={selectedShow?.name}
         episodeName={selectedEpisode?.name}
+        episodeImageUrl={selectedEpisode?.images?.[0]?.url || '/placeholder-podcast.png'}
       />
     </div>
   )

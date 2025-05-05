@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import PostBox from './PostBox'
@@ -18,6 +18,13 @@ interface Review {
   isLiked?: boolean
 }
 
+interface Comment {
+  id: number
+  review_id: number
+  text: string
+  timestamp: string
+}
+
 interface TimelineProps {
   initialReviews: Review[]
   userProfilePic?: string
@@ -25,6 +32,36 @@ interface TimelineProps {
 
 export default function Timeline({ initialReviews, userProfilePic = '/profile.jpg' }: TimelineProps) {
   const [reviews, setReviews] = useState(initialReviews)
+  const [comments, setComments] = useState<{ [reviewId: number]: Comment[] }>({})
+  const [commentInputs, setCommentInputs] = useState<{ [key: number]: string }>({})
+  const [loadingComments, setLoadingComments] = useState<{ [reviewId: number]: boolean }>({})
+  const [postingComment, setPostingComment] = useState<{ [reviewId: number]: boolean }>({})
+
+  useEffect(() => {
+    sortedReviews.forEach((review) => {
+      if (!comments[review.id]) {
+        fetchComments(review.id)
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviews])
+
+  const fetchComments = async (reviewId: number) => {
+    setLoadingComments((prev) => ({ ...prev, [reviewId]: true }))
+    try {
+      const res = await fetch(`/api/comments?review_id=${reviewId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setComments((prev) => ({ ...prev, [reviewId]: data }))
+      }
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [reviewId]: false }))
+    }
+  }
+
+  const handleReviewSubmit = (newReview: Review) => {
+    setReviews(prev => [newReview, ...prev])
+  }
 
   const sortedReviews = [...reviews].sort((a, b) => {
     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -43,9 +80,28 @@ export default function Timeline({ initialReviews, userProfilePic = '/profile.jp
     }))
   }
 
+  const handleAddComment = async (reviewId: number) => {
+    const text = commentInputs[reviewId]?.trim()
+    if (!text) return
+    setPostingComment((prev) => ({ ...prev, [reviewId]: true }))
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ review_id: reviewId, text }),
+      })
+      if (res.ok) {
+        setCommentInputs((inputs) => ({ ...inputs, [reviewId]: '' }))
+        fetchComments(reviewId)
+      }
+    } finally {
+      setPostingComment((prev) => ({ ...prev, [reviewId]: false }))
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto">
-      <PostBox userProfilePic={userProfilePic} />
+      <PostBox userProfilePic={userProfilePic} onReviewSubmit={handleReviewSubmit} />
       
       <div className="bg-white shadow-sm rounded-lg p-6">
         <div className="space-y-12">
@@ -121,6 +177,39 @@ export default function Timeline({ initialReviews, userProfilePic = '/profile.jp
                     </svg>
                     <span>{review.comments || 0}</span>
                   </button>
+                </div>
+
+                {/* Comment Section */}
+                <div className="mt-4">
+                  <div className="space-y-2">
+                    {loadingComments[review.id] ? (
+                      <div className="text-sm text-gray-400">Loading comments...</div>
+                    ) : (
+                      (comments[review.id] || []).map(comment => (
+                        <div key={comment.id} className="text-sm text-gray-700 bg-gray-100 rounded px-3 py-2">
+                          <span className="font-medium text-gray-900">You:</span> {comment.text}
+                          <span className="ml-2 text-xs text-gray-400">{formatDistanceToNow(new Date(comment.timestamp))} ago</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={commentInputs[review.id] || ''}
+                      onChange={e => setCommentInputs(inputs => ({ ...inputs, [review.id]: e.target.value }))}
+                      placeholder="Add a comment..."
+                      className="flex-1 border rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white text-gray-900 placeholder-gray-400"
+                      disabled={postingComment[review.id]}
+                    />
+                    <button
+                      onClick={() => handleAddComment(review.id)}
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                      disabled={!commentInputs[review.id]?.trim() || postingComment[review.id]}
+                    >
+                      {postingComment[review.id] ? 'Replying...' : 'Reply'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

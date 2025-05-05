@@ -8,9 +8,10 @@ interface ReviewModalProps {
   onSubmit: (rating: number, review?: string) => void
   showName?: string
   episodeName?: string
+  episodeImageUrl?: string
 }
 
-export default function ReviewModal({ isOpen, onClose, onSubmit, showName, episodeName }: ReviewModalProps) {
+export default function ReviewModal({ isOpen, onClose, onSubmit, showName, episodeName, episodeImageUrl }: ReviewModalProps) {
   const [rating, setRating] = useState(0)
   const [review, setReview] = useState('')
 
@@ -27,9 +28,17 @@ export default function ReviewModal({ isOpen, onClose, onSubmit, showName, episo
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 max-w-lg w-full">
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            {showName && <div className="font-medium mb-1">{showName}</div>}
-            {episodeName && <div className="text-gray-600 text-sm mb-4">{episodeName}</div>}
+          <div className="mb-4 flex flex-col items-center">
+            {episodeImageUrl && (
+              <img
+                src={episodeImageUrl}
+                alt={episodeName || 'Episode'}
+                className="w-24 h-24 object-cover rounded mb-2 border border-gray-200 bg-gray-100"
+                onError={e => (e.currentTarget.src = '/placeholder-podcast.png')}
+              />
+            )}
+            {showName && <div className="font-medium mb-1 text-center">{showName}</div>}
+            {episodeName && <div className="text-gray-600 text-sm mb-4 text-center">{episodeName}</div>}
             <div className="flex items-center justify-center space-x-2 mb-4">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button

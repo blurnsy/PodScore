@@ -258,6 +258,21 @@ class Database:
                 
         self.conn.commit()
 
+    def add_comment(self, review_id: int, text: str) -> None:
+        cursor = self.conn.cursor()
+        cursor.execute('''
+        INSERT INTO comments (review_id, text, timestamp)
+        VALUES (?, ?, ?)
+        ''', (review_id, text, datetime.now().isoformat()))
+        self.conn.commit()
+
+    def get_comments(self, review_id: int) -> list[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        cursor.execute('''
+        SELECT * FROM comments WHERE review_id = ? ORDER BY timestamp ASC
+        ''', (review_id,))
+        return [dict(row) for row in cursor.fetchall()]
+
     def close(self) -> None:
         self.conn.close()
 
@@ -444,6 +459,28 @@ def get_user_shows():
     try:
         shows = db.get_shows()  # Since there's only one user, return all shows
         return jsonify(shows)
+    finally:
+        db.close()
+
+@app.route('/api/comments', methods=['GET', 'POST'])
+def handle_comments():
+    db = Database(db_path)
+    try:
+        if request.method == 'GET':
+            review_id = request.args.get('review_id')
+            if not review_id:
+                return jsonify({'error': 'review_id is required'}), 400
+            comments = db.get_comments(int(review_id))
+            return jsonify(comments)
+        else:  # POST
+            data = request.json
+            if not data or 'review_id' not in data or 'text' not in data:
+                return jsonify({'error': 'review_id and text are required'}), 400
+            db.add_comment(
+                review_id=int(data['review_id']),
+                text=data['text']
+            )
+            return jsonify({'status': 'success'})
     finally:
         db.close()
 
