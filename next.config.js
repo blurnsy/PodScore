@@ -24,6 +24,11 @@ const nextConfig = {
         hostname: 'i.scdn.co',
         pathname: '/image/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+        pathname: '/7.x/**',
+      },
     ],
   },
 }

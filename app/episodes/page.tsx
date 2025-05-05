@@ -63,19 +63,16 @@ export default function EpisodesPage() {
       if (!res.ok) throw new Error("Failed to fetch episodes")
       const data = await res.json()
       
-      // Fetch listening history
       const historyRes = await fetch(`${API_BASE}/api/listening-history`)
       if (!historyRes.ok) throw new Error("Failed to fetch listening history")
       const history = await historyRes.json()
       const listenedEpisodes = new Set(history.map((h: any) => h.episode_id))
       
-      // Fetch ratings
       const ratingsRes = await fetch(`${API_BASE}/api/reviews`)
       if (!ratingsRes.ok) throw new Error("Failed to fetch ratings")
       const ratings = await ratingsRes.json()
       const episodeRatings = new Map(ratings.map((r: any) => [r.episode_id, r.rating]))
       
-      // Mark episodes as listened and add ratings
       setEpisodes(data.map((episode: Episode) => ({
         ...episode,
         listened: listenedEpisodes.has(episode.id),
@@ -97,7 +94,6 @@ export default function EpisodesPage() {
       })
       if (!res.ok) throw new Error("Failed to mark episode as listened")
       
-      // Update local state
       setEpisodes(episodes.map(episode => 
         episode.id === episodeId 
           ? { ...episode, listened: true }
@@ -129,7 +125,7 @@ export default function EpisodesPage() {
     setIsReviewModalOpen(true)
   }
 
-  const handleSubmitReview = async (rating: number, review: string) => {
+  const handleSubmitReview = async (rating: number, review?: string) => {
     if (!selectedEpisode) return
 
     const res = await fetch(`${API_BASE}/api/reviews`, {
@@ -140,13 +136,12 @@ export default function EpisodesPage() {
       body: JSON.stringify({
         episode_id: selectedEpisode.id,
         rating,
-        review: review.trim(),
+        review: review?.trim() || '',
       }),
     })
 
     if (!res.ok) throw new Error("Failed to submit review")
     
-    // Update local state with the new rating
     setEpisodes(episodes.map(episode => 
       episode.id === selectedEpisode.id
         ? { ...episode, rating }
@@ -154,7 +149,6 @@ export default function EpisodesPage() {
     ))
   }
 
-  // Add this helper function for rendering stars
   const renderStars = (rating: number) => {
     return (
       <div className="flex text-yellow-400">

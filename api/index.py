@@ -232,22 +232,30 @@ class Database:
     def save_episodes(self, episodes: List[Dict[str, Any]], show_id: str) -> None:
         cursor = self.conn.cursor()
         for episode in episodes:
-            cursor.execute('''
-            INSERT OR REPLACE INTO episodes (
-                id, show_id, name, description, release_date, 
-                duration_ms, spotify_url, image_url
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                episode['id'],
-                show_id,
-                episode['name'],
-                episode['description'],
-                episode['release_date'],
-                episode['duration_ms'],
-                episode['external_urls']['spotify'],
-                episode['images'][0]['url'] if episode['images'] else None
-            ))
+            if not episode or not isinstance(episode, dict):
+                continue
+                
+            try:
+                cursor.execute('''
+                INSERT OR REPLACE INTO episodes (
+                    id, show_id, name, description, release_date, 
+                    duration_ms, spotify_url, image_url
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    episode.get('id'),
+                    show_id,
+                    episode.get('name'),
+                    episode.get('description'),
+                    episode.get('release_date'),
+                    episode.get('duration_ms'),
+                    episode.get('external_urls', {}).get('spotify'),
+                    episode.get('images', [{}])[0].get('url') if episode.get('images') else None
+                ))
+            except Exception as e:
+                print(f"Error saving episode: {e}")
+                continue
+                
         self.conn.commit()
 
     def close(self) -> None:
@@ -276,7 +284,7 @@ def get_show(show_id):
 @app.route('/api/episodes', methods=['GET'])
 def get_episodes():
     show_id = request.args.get('show_id')
-    limit = int(request.args.get('limit', 100))
+    limit = int(request.args.get('limit', 5))  # Default to 5 episodes
     offset = int(request.args.get('offset', 0))
     
     db = Database(db_path)
@@ -427,6 +435,15 @@ def add_show():
             'show': show_details,
             'episodes_count': len(episodes)
         })
+    finally:
+        db.close()
+
+@app.route('/shows/user', methods=['GET'])
+def get_user_shows():
+    db = Database(db_path)
+    try:
+        shows = db.get_shows()  # Since there's only one user, return all shows
+        return jsonify(shows)
     finally:
         db.close()
 
