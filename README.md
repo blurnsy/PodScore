@@ -1,117 +1,142 @@
-# PersonalPod Web
+# Podcast Web App
 
-A web interface for PersonalPod, a podcast tracking and review application.
+A modern, full-stack podcast tracking and review platform. Built with Next.js (TypeScript, Tailwind CSS) and Flask (Python, SQLite), this project aims to deliver a seamless, social, and data-rich podcast experience.
 
-## Setup
+---
 
-1. Install Python dependencies:
+## 🚀 Capabilities
+
+- Browse & Search Podcasts: Discover shows and episodes, filter and search with advanced options.
+- Track Listening: Mark episodes as listened, view your listening history, and analyze trends.
+- Review & Rate: Write rich reviews, rate episodes, and interact with community content.
+- User Profiles: Manage your profile, favorite podcasts, and social connections.
+- Social Features: Like, comment, follow, and share—building a community around podcast listening.
+- Personalized Recommendations: Get suggestions based on your interests and listening habits.
+- Analytics & Insights: Visualize your listening stats, genre preferences, and year-in-review.
+- Mobile-First UI: Responsive design with mobile navigation, dark mode, and smooth interactions.
+- API-first Architecture: RESTful endpoints for all major operations, ready for integration and extension.
+
+---
+
+## 🛠️ Tech Stack
+
+- Frontend: Next.js 14, TypeScript, Tailwind CSS, Supabase Auth
+- Backend: Flask 3, SQLite, Spotipy (Spotify API integration)
+- API: RESTful, CORS-enabled, documented endpoints
+- Dev Tools: pnpm, concurrently, dotenv, ESLint
+
+---
+
+## 📈 Project Status
+
+**In Progress:**  
+This project is under active development.  
+- Core podcast browsing, listening history, and review features are implemented.
+- User authentication, profile management, and social features are in progress.
+- Many advanced features (analytics, recommendations, notifications, lists, etc.) are planned and tracked in the [PRD](./PRD.md).
+
+**What works now:**  
+- Browse/search shows and episodes
+- Add and view reviews
+- Track listening history
+- Basic user authentication (Supabase)
+- Responsive UI
+
+**Actively developing:**  
+- Social login, onboarding, and profile enhancements
+- Comments, likes, and notifications
+- Analytics dashboards and export tools
+
+See [PRD.md](./PRD.md) for the full roadmap and feature breakdown.
+
+---
+
+## 🏗️ Getting Started
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- pnpm (or npm/yarn)
+- SQLite (bundled)
+
+### Installation
+
 ```bash
+# Clone the repo
+git clone https://github.com/YOUR_USERNAME/podcast-web-app.git
+cd podcast-web-app
+
+# Install backend dependencies
 cd api
 pip install -r requirements.txt
-```
+cd ..
 
-2. Install Node.js dependencies:
-```bash
-npm install
-```
-
-## Running the Application
-
-1. Start the Flask backend:
-```bash
-cd api
-python app.py
-```
-
-2. In a new terminal, start the Next.js frontend:
-```bash
-npm run dev
-```
-
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-
-## Features
-
-- View podcast statistics and listening history
-- Browse and search episodes
-- Add reviews and ratings
-- Track listening progress
-- View monthly listening trends
-
-## Development
-
-The application is built with:
-- Frontend: Next.js 13 with TypeScript and Tailwind CSS
-- Backend: Flask with SQLite database
-- API: RESTful endpoints for all podcast operations
-
-<p align="center">
-  <a href="https://nextjs-flask-starter.vercel.app/">
-    <img src="https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png" height="96">
-    <h3 align="center">Next.js Flask Starter</h3>
-  </a>
-</p>
-
-<p align="center">Simple Next.js boilerplate that uses <a href="https://flask.palletsprojects.com/">Flask</a> as the API backend.</p>
-
-<br/>
-
-## Introduction
-
-This is a hybrid Next.js + Python app that uses Next.js as the frontend and Flask as the API backend. One great use case of this is to write Next.js apps that use Python AI libraries on the backend.
-
-## How It Works
-
-The Python/Flask server is mapped into to Next.js app under `/api/`.
-
-This is implemented using [`next.config.js` rewrites](https://github.com/vercel/examples/blob/main/python/nextjs-flask/next.config.js) to map any request to `/api/:path*` to the Flask API, which is hosted in the `/api` folder.
-
-On localhost, the rewrite will be made to the `127.0.0.1:5328` port, which is where the Flask server is running.
-
-In production, the Flask server is hosted as [Python serverless functions](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python) on Vercel.
-
-## Demo
-
-https://nextjs-flask-starter.vercel.app/
-
-## Deploy Your Own
-
-You can clone & deploy it to Vercel with one click:
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?demo-title=Next.js%20Flask%20Starter&demo-description=Simple%20Next.js%20boilerplate%20that%20uses%20Flask%20as%20the%20API%20backend.&demo-url=https%3A%2F%2Fnextjs-flask-starter.vercel.app%2F&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F795TzKM3irWu6KBCUPpPz%2F44e0c6622097b1eea9b48f732bf75d08%2FCleanShot_2023-05-23_at_12.02.15.png&project-name=Next.js%20Flask%20Starter&repository-name=nextjs-flask-starter&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fnextjs-flask&from=vercel-examples-repo)
-
-## Developing Locally
-
-You can clone & create this repo with the following command
-
-```bash
-npx create-next-app nextjs-flask --example "https://github.com/vercel/examples/tree/main/python/nextjs-flask"
-```
-
-## Getting Started
-
-First, install the dependencies:
-
-```bash
-npm install
-# or
-yarn
-# or
+# Install frontend dependencies
 pnpm install
 ```
 
-Then, run the development server:
+### Running Locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+# Start Flask backend (port 5328)
+pnpm run flask-dev
+
+# In a new terminal, start Next.js frontend (port 3000)
+pnpm run next-dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or run both together:
+```bash
+pnpm run dev
+```
 
-The Flask server will be running on [http://127.0.0.1:5328](http://127.0.0.1:5328) – feel free to change the port in `package.json` (you'll also need to update it in `next.config.js`
+- Frontend: http://localhost:3000  
+- Backend API: http://localhost:5328/api
+
+---
+
+## 🧩 Project Structure
+
+```
+flasknext/
+├── app/         # Next.js frontend (TypeScript, Tailwind)
+├── api/         # Flask backend (Python, SQLite)
+├── public/      # Static assets
+├── supabase/    # Auth and storage config
+├── PRD.md       # Product requirements & roadmap
+├── README.md
+```
+
+---
+
+## 🌟 Why This Project?
+
+- Showcases full-stack skills: Modern React/Next.js, Python API, database design, and cloud auth.
+- Demonstrates product thinking: PRD-driven, feature-rich, and user-focused.
+- Open for collaboration: Clean, modular codebase and clear roadmap.
+
+---
+
+## 📋 Roadmap
+
+See [PRD.md](./PRD.md) for a detailed, always-updated list of features, bugs, and future plans.
+
+---
+
+## 🤝 Contributing
+
+Contributions, bug reports, and feature requests are welcome!  
+Please open an issue or pull request.
+
+---
+
+## 📄 License
+
+MIT
+
+---
+
+**Current Status:**  
+This project is a work in progress and not yet production-ready.  
+Follow along or contribute to help shape the future of podcast listening!
