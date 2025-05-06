@@ -6,6 +6,9 @@ import RecentEpisodes from "../components/RecentEpisodes"
 import RecentReviews from "../components/RecentReviews"
 import ProfileHeader from "../components/ProfileHeader"
 import ProfileNavigation from "../components/ProfileNavigation"
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useAuth } from '../providers/auth-provider'
+import EditProfileModal from '../components/EditProfileModal'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5328"
 
@@ -48,10 +51,34 @@ async function getRecentReviews() {
 }
 
 export default function ProfilePage() {
+  const { user } = useAuth()
+  const [username, setUsername] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
+  const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    const getProfile = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single()
+        
+        if (data) {
+          setUsername(data.username || '')
+          setAvatarUrl(data.avatar_url || '')
+        }
+      }
+    }
+
+    getProfile()
+  }, [user, supabase])
 
   useEffect(() => {
     getStats().then(setStats)
@@ -82,7 +109,7 @@ export default function ProfilePage() {
   }
 
   const handleEditProfile = () => {
-    console.log('Edit profile clicked - implement modal or navigation')
+    setIsModalOpen(true)
   }
 
   const handleShareProfile = () => {
@@ -93,16 +120,21 @@ export default function ProfilePage() {
     console.log('Settings clicked - implement settings page navigation')
   }
 
+  const handleProfileUpdate = (newUsername: string, newAvatarUrl: string) => {
+    setUsername(newUsername)
+    setAvatarUrl(newAvatarUrl)
+  }
+
   const socialStats = {
-    following: 247,
-    followers: 182
+    following: stats?.following || 0,
+    followers: stats?.followers || 0
   }
 
   return (
     <div className="space-y-8">
       <ProfileHeader 
-        username="Brett Burns"
-        avatarUrl="/profile.jpg"
+        username={username}
+        avatarUrl={avatarUrl}
         onEditProfile={handleEditProfile}
         onShareProfile={handleShareProfile}
         onOpenSettings={handleOpenSettings}
@@ -115,6 +147,14 @@ export default function ProfilePage() {
       <div className="mt-12">
         <RecentReviews initialReviews={reviews} />
       </div>
+
+      <EditProfileModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        username={username}
+        avatarUrl={avatarUrl}
+        onProfileUpdate={handleProfileUpdate}
+      />
     </div>
   )
 } 

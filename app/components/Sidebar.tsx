@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { HomeIcon, TvIcon, ListBulletIcon, ChartBarIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
+import { HomeIcon, TvIcon, ListBulletIcon, ChartBarIcon } from '@heroicons/react/24/outline'
+import { useAuth } from '../providers/auth-provider'
+import { UserDropdown } from './UserDropdown'
 
 const navItems = [
   { name: 'Home', href: '/', icon: HomeIcon },
@@ -13,31 +15,45 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { user, loading } = useAuth()
+
+  if (loading || !user) {
+    return null
+  }
 
   return (
-    <aside className="flex flex-col h-screen w-56 bg-white border-r border-gray-200 shadow-sm p-4 justify-between fixed">
-      <nav className="flex flex-col gap-2 mt-4">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const active = pathname === item.href
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-2 rounded-lg text-base font-medium transition-colors
-                ${active ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-500'}`}
-            >
-              <Icon className={`h-6 w-6 ${active ? 'text-indigo-500' : 'text-gray-400 group-hover:text-indigo-500'}`} />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
-      <div className="mb-2">
-        <button className="flex items-center justify-center gap-2 w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-full text-lg transition-colors shadow">
-          <PencilSquareIcon className="h-6 w-6" />
-          Log
-        </button>
+    <aside className="hidden md:flex flex-col h-screen w-64 bg-white border-r border-gray-200 fixed left-0 top-0">
+      <div className="flex flex-col h-full">
+        {/* Logo */}
+        <div className="p-4">
+          <Link href="/" className="text-2xl font-bold text-indigo-600">
+            Podcast
+          </Link>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const active = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-4 px-6 py-3 text-xl font-medium transition-colors hover:bg-gray-50
+                  ${active ? 'text-indigo-600' : 'text-gray-700'}`}
+              >
+                <Icon className={`h-7 w-7 ${active ? 'text-indigo-600' : 'text-gray-700'}`} />
+                {item.name}
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* User Profile Section */}
+        <div className="mt-auto border-t border-gray-200">
+          <UserDropdown />
+        </div>
       </div>
     </aside>
   )
